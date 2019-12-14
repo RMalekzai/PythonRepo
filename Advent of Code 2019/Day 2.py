@@ -36,7 +36,8 @@ for noun in range(100):
         code = [int(x) for x in codebase.split(",")]
         output = run_code(code, noun, verb)
         if output == 19690720:
-            print("Done, it is " + str(code[1]) + "and " + str(code[2]))
+            print("Done, it is " + str(noun) + "and " + str(verb))
             break
-        else:
-            print(output)
+    else:
+        continue
+    break
