@@ -4,16 +4,16 @@ import matplotlib.pyplot as pp
 def add_direction(start, code):
     (x, y) = start
     if code[0] == "U":
-        line = [(x, y +i) for i in range(int(code[1:]))]
+        line = [(x, y +i) for i in range(int(code[1:]+1))]
         return line[1:]
     elif code[0] == "D":
-        line = [(x, y - i) for i in range(int(code[1:]))]
+        line = [(x, y - i) for i in range(int(code[1:]+1))]
         return line[1:]
     elif code[0] == "R":
-        line = [(x + i, y) for i in range(int(code[1:]))]
+        line = [(x + i, y) for i in range(int(code[1:]+1))]
         return line[1:]
     elif code[0] == "L":
-        line = [(x - i, y) for i in range(int(code[1:]))]
+        line = [(x - i, y) for i in range(int(code[1:]+1))]
         return line[1:]
     else:
         print("That didn't work")
