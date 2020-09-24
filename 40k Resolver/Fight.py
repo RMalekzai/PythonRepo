@@ -5,11 +5,11 @@ Units = pd.read_excel(r"C:\Users\roman\PythonRepo\40k Resolver\DataSheets.xlsx",
 Weapons = pd.read_excel(r"C:\Users\roman\PythonRepo\40k Resolver\DataSheets.xlsx", sheet_name="Weapons",index_col="Weapon")
 
 
-def shots(weapon):
-    if str.isnumeric(weapon.Shots):
-        return weapon.Shots
-    else:
-        return weapon.Shots[1:]
+# def shots(model):
+#     if type(model.gun_shots) == int:
+#         return model.gun_shots
+#     else:
+#         return model.gun_shots[1:]
 
 
 def roll_d6(number):
@@ -17,6 +17,10 @@ def roll_d6(number):
     for x in range(number):
         rolls.append(random.randint(1,6))
     return rolls
+
+
+def roll_dx(x):
+    return random.randint(1, x)
 
 
 def roll_hits(number, BS):
@@ -57,16 +61,21 @@ def roll_save(number, ap, armour, invul):
 
 
 def shooting(attacker, defender):
-    y = shots(attacker.gun)
+    # y = shots(attacker.gun_shots)
+    if type(attacker.gun_shots) == int:
+        y = attacker.gun_shots
+    else:
+        y = roll_dx(int(attacker.gun_shots[1:]))
     hits = roll_hits(y, attacker.BS)
-    wounds = roll_wounds(hits, attacker.S, defender.T)
-    saved = roll_save(wounds, attacker.AP, defender.Save, defender.Invul)
-    print("{0} fired {1} shots, {2} of them hit, {3} of them wounded, and {4} of them were saved.".format(attacker.Unit, y, hits, wounds, saved))
+    wounds = roll_wounds(hits, attacker.gun_s, defender.T)
+    saved = roll_save(wounds, attacker.gun_ap, defender.Save, defender.Invul)
+    print("{0} fired {1} shots with a {2}, {3} of them hit, {4} of them wounded, and {5} of them were saved. Total wounds: {6}"
+          .format(attacker.name, y, attacker.gun_name, hits, wounds, saved, wounds-saved))
     return wounds - saved
 
 
 class Model:
-    def __init__(self, name, M, BS, S, T, W, A, LD, Save, Ignore, RR_H, RR_W, RR_Dmg, gun, Invul=7):
+    def __init__(self, name, M, BS, S, T, W, A, LD, Save, Ignore, RR_H, RR_W, RR_Dmg, Gun, Invul=7):
         self.name = name
         self.M = M
         self.BS = BS
@@ -81,10 +90,17 @@ class Model:
         self.RR_H = RR_H
         self.RR_W = RR_W
         self.RR_Dmg = RR_Dmg
-        self.gun = gun
+        self.gun_name = Gun.name
+        self.gun_range = Gun.range
+        self.gun_type = Gun.type
+        self.gun_shots = Gun.shots
+        self.gun_s = Gun.s
+        self.gun_ap = Gun.ap
+        self.gun_d = Gun.d
+        self.gun_ability = Gun.ability
 
 
-class Weapon:
+class Gun:
     def __init__(self, name, range, type, shots, s, ap, d, ability=""):
         self.name = name
         self.range = range
