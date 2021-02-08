@@ -50,15 +50,18 @@ for x in Weapons.index:
     Guns[str(stats[0])] = Gun(stats[0], stats[2], stats[3], stats[4], stats[5], stats[6], stats[7], stats[8])
 
 
-HavocSquad = [(Models["Havoc"], HBolter), Models["Havoc"], Models["Havoc"], Models["Havoc"], Models["Aspiring Champion H"]]
-CSM_Squad_Bolters = [Models["Chaos Space Marine"], Models["Chaos Space Marine"], Models["Chaos Space Marine"],
-                     Models["Chaos Space Marine"], Models["Aspiring Champion CSM"]]
+HavocSquad = [(Models["Havoc"], "HBolter"), (Models["Havoc"], "HBolter"), (Models["Havoc"], "ReaperC"),
+              (Models["Havoc"], "ReaperC"), (Models["Aspiring Champion H"], "CombiBolter")]
+
+CSM_Squad_Bolters = [(Models["Chaos Space Marine"], "Bolter"), (Models["Chaos Space Marine"], "Bolter"),
+                     (Models["Chaos Space Marine"], "Bolter"), (Models["Chaos Space Marine"], "Bolter"),
+                     (Models["Aspiring Champion CSM"], "Bolter")]
 
 
 def roll_d6(number):
     rolls = []
     for x in range(number):
-        rolls.append(random.randint(1,6))
+        rolls.append(random.randint(1, 6))
     return rolls
 
 
@@ -106,20 +109,57 @@ def roll_save(number, ap, armour, invul):
     return sum([x >= save for x in rolls])
 
 
+def calc_damage(Whits, gun, defender):
+    ignore = defender.Ignore
+    damage = 0
+    if type(gun.d) == int:
+        damage += gun.d * Whits
+    elif type(gun.d) == str:
+        for x in range(Whits):
+            damage += roll_dx(int(gun.d[1:]))
+    return damage
+
+
 """Shoots one model at one other model, but i guess it's good for now"""
 def shooting(attacker, defender):
-    defender = defender[0]
+    i, j = defender
+    i.Gun = j
     m, n = attacker
     m.Gun = n
-    if type(m.Gun.shots) == int:
-        y = m.Gun.shots
-    else:
-        y = roll_dx(int(m.Gun.shots[1:]))
-    hits = roll_hits(y, m.BS)
-    wounds = roll_wounds(hits, m.Gun.s, defender.T)
-    saved = roll_save(wounds, m.Gun.ap, defender.Save, defender.Invul)
-    print("{0} fired {1} shots with a {2}, {3} of them hit, {4} of them wounded, and {5} of them were saved. Total wounds: {6}"
-          .format(m.name, y, m.Gun.name, hits, wounds, saved, wounds-saved))
-    return wounds - saved
+    for gun in m.Gun:
+        if type(gun.shots) == int:
+            y = gun.shots
+        else:
+            y = roll_dx(int(gun.shots[1:]))
+        hits = roll_hits(y, m.BS)
+        wounds = roll_wounds(hits, gun.s, i.T)
+        saved = roll_save(wounds, gun.ap, i.Save, i.Invul)
+        Whits = wounds - saved
+        damage = calc_damage(Whits, gun, i)
+        print("{0} fired {1} shots with a {2}, {3} of them hit, {4} of them wounded, and {5} of them were saved. "
+              "Total wounding hits: {6}, Total Damage: {7}."
+              .format(m.name, y, gun.name, hits, wounds, saved, Whits, damage))
+
+    for gun in i.Gun:
+        if type(gun.shots) == int:
+            y = gun.shots
+        else:
+            y = roll_dx(int(gun.shots[1:]))
+        hits = roll_hits(y, i.BS)
+        wounds = roll_wounds(hits, gun.s, m.T)
+        saved = roll_save(wounds, gun.ap, m.Save, m.Invul)
+        Whits = wounds - saved
+        damage = calc_damage(Whits, gun, m)
+        print("{0} fired {1} shots with a {2}, {3} of them hit, {4} of them wounded, and {5} of them were saved. "
+              "Total wounding hits: {6}, Total Damage: {7}."
+              .format(i.name, y, gun.name, hits, wounds, saved, Whits, damage))
 
 
+CSM = (Models["Chaos Space Marine"], [Guns["Bolter"]])
+Forgefiend = (Models["Forgefiend"], [Guns["HadesAutoCannon"], Guns["HadesAutoCannon"]])
+
+# def shooting(squad1, squad2):
+#     Squad1_Models = [x for (x,y) in squad1]
+#     Squad1_Guns = [y for (x,y) in squad1]
+#     Squad2_Models = [x for (x,y) in squad2]
+#     Squad2_Guns = [y for (x,y) in squad2]
