@@ -42,7 +42,7 @@ Models = {}
 for x in Units.index:
     stats = Units.loc[x]
     Models[str(stats[1])] = Model(str(stats[1]), stats[2], stats[3], stats[4], stats[5], stats[6], stats[7], stats[8],
-                                  stats[9], stats[10], stats[12], stats[13], stats[14], stats[15])
+                                  stats[9], stats[10], stats[12], stats[13], stats[14], stats[15], stats[11])
 
 Guns = {}
 for x in Weapons.index:
@@ -69,17 +69,24 @@ def roll_dx(x):
     return random.randint(1, x)
 
 
-def roll_hits(number, BS):
+def roll_hits(number, BS, RR_H):
     hits = 0
+    rerolls = []
     rolls = roll_d6(number)
     for x in rolls:
-        if x >= BS:
+        if x < BS and x <= RR_H:
+            rerolls.append(roll_dx(6))
+        elif x >= BS:
+            hits += 1
+    for y in rerolls:
+        if y >= BS:
             hits += 1
     return hits
 
 
-def roll_wounds(number, attacker, S, T):
+def roll_wounds(number, attacker, S, T, RR_W):
     wounds = 0
+    rerolls = []
     if type(S) == str:
         if "+" in S:
             S = attacker.S + S[1:]
@@ -87,20 +94,34 @@ def roll_wounds(number, attacker, S, T):
             S = attacker.S
     rolls = roll_d6(number)
     if S >= T*2:
-        wounds += sum([x >= 2 for x in rolls])
-        return wounds
+        # wounds += sum([x >= 2 for x in rolls])
+        # return wounds
+        woundon = 2
     elif T >= S * 2:
-        wounds += sum([x >= 6 for x in rolls])
-        return wounds
+        # wounds += sum([x >= 6 for x in rolls])
+        # return wounds
+        woundon = 6
     elif S > T:
-        wounds += sum([x >= 3 for x in rolls])
-        return wounds
+        # wounds += sum([x >= 3 for x in rolls])
+        # return wounds
+        woundon = 3
     elif S == T:
-        wounds += sum([x >= 4 for x in rolls])
-        return wounds
+        # wounds += sum([x >= 4 for x in rolls])
+        # return wounds
+        woundon = 4
     elif T > S:
-        wounds += sum([x >= 5 for x in rolls])
-        return wounds
+        # wounds += sum([x >= 5 for x in rolls])
+        # return wounds
+        woundon = 5
+    for x in rolls:
+        if x < woundon and x <= RR_W:
+            rerolls.append(roll_dx(6))
+        elif x >= woundon:
+            wounds += 1
+    for y in rerolls:
+        if y >= woundon:
+            wounds += 1
+    return wounds
 
 
 def roll_save(number, ap, armour, invul):
@@ -133,7 +154,6 @@ def calc_fnp(defender, damage):
     saved = 0
     for x in rolls:
         if x >= ignore:
-            damage -= 1
             saved += 1
     return damage-saved, saved
 
@@ -149,8 +169,8 @@ def shooting(attacker, defender):
             y = gun.shots
         else:
             y = roll_dx(int(gun.shots[1:]))
-        hits = roll_hits(y, m.BS)
-        wounds = roll_wounds(hits, m, gun.s, i.T)
+        hits = roll_hits(y, m.BS, m.RR_H)
+        wounds = roll_wounds(hits, m, gun.s, i.T, m.RR_W)
         saved = roll_save(wounds, gun.ap, i.Save, i.Invul)
         Whits = wounds - saved
         damage = calc_damage(Whits, gun)
@@ -164,8 +184,8 @@ def shooting(attacker, defender):
             y = gun.shots
         else:
             y = roll_dx(int(gun.shots[1:]))
-        hits = roll_hits(y, i.BS)
-        wounds = roll_wounds(hits, i, gun.s, m.T)
+        hits = roll_hits(y, i.BS, i.RR_H)
+        wounds = roll_wounds(hits, i, gun.s, m.T, i.RR_W)
         saved = roll_save(wounds, gun.ap, m.Save, m.Invul)
         Whits = wounds - saved
         damage = calc_damage(Whits, gun)
