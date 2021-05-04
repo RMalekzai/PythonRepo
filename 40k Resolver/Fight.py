@@ -6,7 +6,7 @@ Weapons = pd.read_excel(r"C:\Users\roman\PythonRepo\40k Resolver\DataSheets.xlsx
 
 
 class Model:
-    def __init__(self, name, M, WS, BS, S, T, W, A, LD, Save, Ignore = 0, RR_H=0, RR_W=0, RR_Dmg=0, Invul=0):
+    def __init__(self, name, M, WS, BS, S, T, W, A, LD, Save, Ignore = 0, RR_H=7, RR_W=7, RR_Dmg=0, Invul=0):
         self.name = name
         self.M = M
         self.WS = WS
@@ -78,8 +78,13 @@ def roll_hits(number, BS):
     return hits
 
 
-def roll_wounds(number, S, T):
+def roll_wounds(number, attacker, S, T):
     wounds = 0
+    if type(S) == str:
+        if "+" in S:
+            S = attacker.S + S[1:]
+        elif "User" in S:
+            S = attacker.S
     rolls = roll_d6(number)
     if S >= T*2:
         wounds += sum([x >= 2 for x in rolls])
@@ -109,15 +114,28 @@ def roll_save(number, ap, armour, invul):
     return sum([x >= save for x in rolls])
 
 
-def calc_damage(Whits, gun, defender):
-    ignore = defender.Ignore
+def calc_damage(Whits, gun):
     damage = 0
     if type(gun.d) == int:
         damage += gun.d * Whits
-    elif type(gun.d) == str:
+    elif type(gun.d) == str and "+" not in gun.d:
         for x in range(Whits):
             damage += roll_dx(int(gun.d[1:]))
+    elif type(gun.d) == str and "+" in gun.d:
+        for x in range(Whits):
+            damage += roll_dx(int(gun.d[1:2])) + int(gun.d[-1])
     return damage
+
+
+def calc_fnp(defender, damage):
+    ignore = defender.Ignore
+    rolls = roll_d6(damage)
+    saved = 0
+    for x in rolls:
+        if x >= ignore:
+            damage -= 1
+            saved += 1
+    return damage-saved, saved
 
 
 """Shoots one model at one other model, but i guess it's good for now"""
@@ -132,13 +150,14 @@ def shooting(attacker, defender):
         else:
             y = roll_dx(int(gun.shots[1:]))
         hits = roll_hits(y, m.BS)
-        wounds = roll_wounds(hits, gun.s, i.T)
+        wounds = roll_wounds(hits, m, gun.s, i.T)
         saved = roll_save(wounds, gun.ap, i.Save, i.Invul)
         Whits = wounds - saved
-        damage = calc_damage(Whits, gun, i)
+        damage = calc_damage(Whits, gun)
+        FnP = calc_fnp(i, damage)
         print("{0} fired {1} shots with a {2}, {3} of them hit, {4} of them wounded, and {5} of them were saved. "
-              "Total wounding hits: {6}, Total Damage: {7}."
-              .format(m.name, y, gun.name, hits, wounds, saved, Whits, damage))
+              "Total wounding hits: {6}, Total Damage: {7}. {8} wounds saved with FnP, {9} wounds lost"
+              .format(m.name, y, gun.name, hits, wounds, saved, Whits, damage, FnP[1], FnP[0]))
 
     for gun in i.Gun:
         if type(gun.shots) == int:
@@ -146,17 +165,20 @@ def shooting(attacker, defender):
         else:
             y = roll_dx(int(gun.shots[1:]))
         hits = roll_hits(y, i.BS)
-        wounds = roll_wounds(hits, gun.s, m.T)
+        wounds = roll_wounds(hits, i, gun.s, m.T)
         saved = roll_save(wounds, gun.ap, m.Save, m.Invul)
         Whits = wounds - saved
-        damage = calc_damage(Whits, gun, m)
+        damage = calc_damage(Whits, gun)
+        FnP = calc_fnp(m, damage)
         print("{0} fired {1} shots with a {2}, {3} of them hit, {4} of them wounded, and {5} of them were saved. "
-              "Total wounding hits: {6}, Total Damage: {7}."
-              .format(i.name, y, gun.name, hits, wounds, saved, Whits, damage))
+              "Total wounding hits: {6}, Total Damage: {7}. {8} wounds saved with FnP, {9} wounds lost"
+              .format(i.name, y, gun.name, hits, wounds, saved, Whits, damage, FnP[1], FnP[0]))
 
 
 CSM = (Models["Chaos Space Marine"], [Guns["Bolter"]])
 Forgefiend = (Models["Forgefiend"], [Guns["HadesAutoCannon"], Guns["HadesAutoCannon"]])
+Reaper = (Models["Reaper"], [Guns["StormVP2"]])
+GUO = (Models["Great Unclean One"], [Guns["PlagueFlail"]])
 
 # def shooting(squad1, squad2):
 #     Squad1_Models = [x for (x,y) in squad1]
