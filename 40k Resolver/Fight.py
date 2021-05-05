@@ -218,7 +218,7 @@ def shoot_squads(attacker, defender):
         i.gun = y[1]
         defenders.append(i)
     print("Attacker models start: {0} wielding".format([x.name for x in attackers]))
-    print("Defender models start: {0} wielding {1}".format([x.name for x in defenders], [x.gun.name for x in defenders]))
+    print("Defender models start: {0} wielding".format([x.name for x in defenders]))
     while len(attackers) and len(defenders) > 0:
         for model in attackers:
             for gun in model.gun:
