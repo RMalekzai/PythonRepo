@@ -1,5 +1,6 @@
 import pandas as pd
 import random
+import copy
 
 Units = pd.read_excel(r"C:\Users\roman\PythonRepo\40k Resolver\DataSheets.xlsx", sheet_name="Units")
 Weapons = pd.read_excel(r"C:\Users\roman\PythonRepo\40k Resolver\DataSheets.xlsx", sheet_name="Weapons")
@@ -50,14 +51,6 @@ for x in Weapons.index:
     Guns[str(stats[0])] = Gun(stats[0], stats[2], stats[3], stats[4], stats[5], stats[6], stats[7], stats[8])
 
 
-HavocSquad = [(Models["Havoc"], "HBolter"), (Models["Havoc"], "HBolter"), (Models["Havoc"], "ReaperC"),
-              (Models["Havoc"], "ReaperC"), (Models["Aspiring Champion H"], "CombiBolter")]
-
-CSM_Squad_Bolters = [(Models["Chaos Space Marine"], "Bolter"), (Models["Chaos Space Marine"], "Bolter"),
-                     (Models["Chaos Space Marine"], "Bolter"), (Models["Chaos Space Marine"], "Bolter"),
-                     (Models["Aspiring Champion CSM"], "Bolter")]
-
-
 def roll_d6(number):
     rolls = []
     for x in range(number):
@@ -67,6 +60,17 @@ def roll_d6(number):
 
 def roll_dx(x):
     return random.randint(1, x)
+
+
+def calc_shots(gun):
+    if type(gun.shots) == int:
+        y = gun.shots
+    else:
+        y = roll_dx(int(gun.shots[1:]))
+    if gun.type == "Rapid Fire":
+        return y *2
+    else:
+        return y
 
 
 def roll_hits(number, BS, RR_H):
@@ -159,16 +163,13 @@ def calc_fnp(defender, damage):
 
 
 """Shoots one model at one other model, but i guess it's good for now"""
-def shooting(attacker, defender):
+def shooting_test(attacker, defender):
     i, j = defender
     i.Gun = j
     m, n = attacker
     m.Gun = n
     for gun in m.Gun:
-        if type(gun.shots) == int:
-            y = gun.shots
-        else:
-            y = roll_dx(int(gun.shots[1:]))
+        y = calc_shots(gun)
         hits = roll_hits(y, m.BS, m.RR_H)
         wounds = roll_wounds(hits, m, gun.s, i.T, m.RR_W)
         saved = roll_save(wounds, gun.ap, i.Save, i.Invul)
@@ -180,10 +181,7 @@ def shooting(attacker, defender):
               .format(m.name, y, gun.name, hits, wounds, saved, Whits, damage, FnP[1], FnP[0]))
 
     for gun in i.Gun:
-        if type(gun.shots) == int:
-            y = gun.shots
-        else:
-            y = roll_dx(int(gun.shots[1:]))
+        y = calc_shots(gun)
         hits = roll_hits(y, i.BS, i.RR_H)
         wounds = roll_wounds(hits, i, gun.s, m.T, i.RR_W)
         saved = roll_save(wounds, gun.ap, m.Save, m.Invul)
@@ -196,12 +194,68 @@ def shooting(attacker, defender):
 
 
 CSM = (Models["Chaos Space Marine"], [Guns["Bolter"]])
-Forgefiend = (Models["Forgefiend"], [Guns["HadesAutoCannon"], Guns["HadesAutoCannon"]])
-Reaper = (Models["Reaper"], [Guns["StormVP2"]])
-GUO = (Models["Great Unclean One"], [Guns["PlagueFlail"]])
+Forgefiend = [(Models["Forgefiend"], [Guns["HadesAutoCannon"], Guns["HadesAutoCannon"]])]
+Reaper = [(Models["Reaper"], [Guns["StormVP2"]])]
+GUO = [(Models["Great Unclean One"], [Guns["PlagueFlail"]])]
 
-# def shooting(squad1, squad2):
-#     Squad1_Models = [x for (x,y) in squad1]
-#     Squad1_Guns = [y for (x,y) in squad1]
-#     Squad2_Models = [x for (x,y) in squad2]
-#     Squad2_Guns = [y for (x,y) in squad2]
+HavocSquad_2LC2RC = [(Models["Aspiring Champion H"], [Guns["CombiBolter"]]), (Models["Havoc"], [Guns["LasCannon"]]),
+                     (Models["Havoc"], [Guns["LasCannon"]]), (Models["Havoc"], [Guns["ReaperC"]]),
+                     (Models["Havoc"], [Guns["ReaperC"]])]
+CSM_Squad_Bolters = [(Models["Chaos Space Marine"], [Guns["Bolter"]]), (Models["Chaos Space Marine"], [Guns["Bolter"]]),
+                     (Models["Chaos Space Marine"], [Guns["Bolter"]]), (Models["Chaos Space Marine"], [Guns["Bolter"]]),
+                     (Models["Aspiring Champion CSM"], [Guns["Bolter"]])]
+
+"""Start attempt to have squads fight. Kills first in list as wounds are allocated"""
+def shoot_squads(attacker, defender):
+    attackers = []
+    defenders = []
+    for x in attacker:
+        i = copy.deepcopy(x[0])
+        i.gun = x[1]
+        attackers.append(i)
+    for y in defender:
+        i = copy.deepcopy(y[0])
+        i.gun = y[1]
+        defenders.append(i)
+    print("Attacker models start: {0} wielding".format([x.name for x in attackers]))
+    print("Defender models start: {0} wielding {1}".format([x.name for x in defenders], [x.gun.name for x in defenders]))
+    while len(attackers) and len(defenders) > 0:
+        for model in attackers:
+            for gun in model.gun:
+                y = calc_shots(gun)
+                hits = roll_hits(y, model.BS, model.RR_H)
+                wounds = roll_wounds(hits, model, gun.s, defenders[0].T, model.RR_W)
+                saved = roll_save(wounds, gun.ap, defenders[0].Save, defenders[0].Invul)
+                Whits = wounds - saved
+                damage = calc_damage(Whits, gun)
+                FnP = calc_fnp(defenders[0], damage)
+                print("{0} fired {1} shots with a {2}, {3} of them hit, {4} of them wounded, and {5} of them were saved. "
+                      "Total wounding hits: {6}, Total Damage: {7}. {8} wounds saved with FnP, {9} wounds lost"
+                      .format(model.name, y, gun.name, hits, wounds, saved, Whits, damage, FnP[1], FnP[0]))
+                if FnP[0] >= defenders[0].W:
+                    print ("{0} is dead!".format(defenders[0].name))
+                    defenders.pop(0)
+                else:
+                    defenders[0].W -= FnP[0]
+                    print("{0} takes {1} damage, has {2} wounds left!".format(defenders[0].name, FnP[0], defenders[0].W))
+
+        for model in defenders:
+            for gun in model.gun:
+                y = calc_shots(gun)
+                hits = roll_hits(y, model.BS, model.RR_H)
+                wounds = roll_wounds(hits, model, gun.s, attackers[0].T, model.RR_W)
+                saved = roll_save(wounds, gun.ap, attackers[0].Save, attackers[0].Invul)
+                Whits = wounds - saved
+                damage = calc_damage(Whits, gun)
+                FnP = calc_fnp(attackers[0], damage)
+                print("{0} fired {1} shots with a {2}, {3} of them hit, {4} of them wounded, and {5} of them were saved. "
+                      "Total wounding hits: {6}, Total Damage: {7}. {8} wounds saved with FnP, {9} wounds lost"
+                      .format(model.name, y, gun.name, hits, wounds, saved, Whits, damage, FnP[1], FnP[0]))
+                if FnP[0] >= attackers[0].W:
+                    print("{0} is dead!".format(attackers[0].name))
+                    attackers.pop(0)
+                else:
+                    attackers[0].W -= FnP[0]
+                    print("{0} takes {1} damage, has {2} wounds left!".format(attackers[0].name, FnP[0], attackers[0].W))
+    print("Attacker models left: {0}".format([x.name for x in attackers]))
+    print("Defender models left: {0}".format([x.name for x in defenders]))
