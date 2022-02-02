@@ -7,21 +7,21 @@ from sklearn.metrics import mean_squared_error, r2_score
 # from sklearn import svm
 # from sklearn.tree import DecisionTreeRegressor
 
-y_train = pd.read_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\MinMax_TransformedData.xlsx",
+y_train = pd.read_excel(r"MinMax_TransformedData.xlsx",
                         sheet_name="y_train", index_col=0)
-y_test = pd.read_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\MinMax_TransformedData.xlsx",
+y_test = pd.read_excel(r"MinMax_TransformedData.xlsx",
                        sheet_name="y_test", index_col=0)
-minmax_train = pd.read_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\MinMax_TransformedData.xlsx",
+minmax_train = pd.read_excel(r"MinMax_TransformedData.xlsx",
                         sheet_name="x_train", index_col=0)
-minmax_test = pd.read_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\MinMax_TransformedData.xlsx",
+minmax_test = pd.read_excel(r"MinMax_TransformedData.xlsx",
                        sheet_name="x_test", index_col=0)
-logged_train = pd.read_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\Logged_TransformedData.xlsx",
+logged_train = pd.read_excel(r"Logged_TransformedData.xlsx",
                         sheet_name="x_train", index_col=0)
-logged_test = pd.read_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\Logged_TransformedData.xlsx",
+logged_test = pd.read_excel(r"Logged_TransformedData.xlsx",
                        sheet_name="x_test", index_col=0)
-raw_train = pd.read_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\NON_TransformedData.xlsx",
+raw_train = pd.read_excel(r"NON_TransformedData.xlsx",
                        sheet_name="x_train", index_col=0)
-raw_test = pd.read_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\NON_TransformedData.xlsx",
+raw_test = pd.read_excel(r"NON_TransformedData.xlsx",
                        sheet_name="x_test", index_col=0)
 
 scoring = pd.DataFrame(index=y_test.index)
@@ -42,6 +42,7 @@ pls15 = PLSRegression(n_components=15, scale="False")
 pls25_s = PLSRegression(n_components=25, scale="True")
 pls25 = PLSRegression(n_components=25, scale="False")
 
+
 models = [pls6, pls9]
 train_set = [minmax_train, logged_train]
 test_set = [minmax_test, logged_test]
@@ -61,4 +62,4 @@ def fit_and_predict(model, train, test):
 #         values = fit_and_predict(y, train_set[x], test_set[x])
 
 mean_squared_error(scoring["Actual"], values4)
-scoring.to_excel(r"C:\Users\roman\PythonRepo\ML Dataset Work\Raman KNN Algo\Predicted Values.xlsx")
+scoring.to_excel(r"Predicted Values.xlsx")
